@@ -7,3 +7,6 @@
 cits3003_project
 cits3003_project.exe
 .DS*
+
+# New added.
+config/imgui.ini
