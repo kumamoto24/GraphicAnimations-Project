@@ -122,7 +122,19 @@ void EditorScene::LitMaterialComponent::add_material_imgui_edit_section(MasterRe
     bool material_changed = false;
     ImGui::Text("Material");
 
-    // Add UI controls here
+    // Add UI controls here //Solution: D (1/2)
+    material_changed |= ImGui::ColorEdit3("Diffuse Tint", &material.diffuse_tint[0]);
+    material_changed |= ImGui::DragFloat("Diffuse Factor", &material.diffuse_tint.a, 0.01f, 0.0f, FLT_MAX);
+
+    material_changed |= ImGui::ColorEdit3("Specular Tint", &material.specular_tint[0]);
+    material_changed |= ImGui::DragFloat("Specular Factor", &material.specular_tint.a, 0.01f, 0.0f, FLT_MAX);
+
+    material_changed |= ImGui::ColorEdit3("Ambient Tint", &material.ambient_tint[0]);
+    material_changed |= ImGui::DragFloat("Ambient Factor", &material.ambient_tint.a, 0.01f, 0.0f, FLT_MAX);
+
+    material_changed |= ImGui::DragFloat("Shininess", &material.shininess, 0.1f, 0.0f, FLT_MAX);
+
+
 
     ImGui::Spacing();
     if (material_changed) {
@@ -152,7 +164,10 @@ void EditorScene::EmissiveMaterialComponent::add_emissive_material_imgui_edit_se
     bool material_changed = false;
     ImGui::Text("Emissive Material");
 
-    // Add UI controls here
+    // Add UI controls here // Solution: D (2/2)
+    material_changed |= ImGui::ColorEdit3("Emission Tint", &material.emission_tint[0]);
+    material_changed |= ImGui::DragFloat("Emission Factor", &material.emission_tint.a, 0.01f, 0.0f, FLT_MAX);
+
 
     ImGui::Spacing();
     if (material_changed) {
