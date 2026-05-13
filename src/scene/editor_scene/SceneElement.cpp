@@ -47,7 +47,7 @@ void EditorScene::LocalTransformComponent::add_local_transform_imgui_edit_sectio
     glm::vec3 euler_rotation_degrees = glm::degrees(euler_rotation);
     transformUpdated |= ImGui::DragFloat3("Rotation", &euler_rotation_degrees[0]);
     ImGui::DragDisableCursor(scene_context.window);
-    euler_rotation = glm::radians(glm::mod(euler_rotation_degrees, 360.0f));
+    euler_rotation = glm::radians(glm::mod(euler_rotation_degrees, 360.0f)); // euler_rotation for task B
 
     {
         // Static also means that all [EntityElement] will share the value
@@ -93,8 +93,13 @@ void EditorScene::LocalTransformComponent::add_local_transform_imgui_edit_sectio
     }
 }
 
+// Solution: task B
 glm::mat4 EditorScene::LocalTransformComponent::calc_model_matrix() const {
-    return glm::translate(position) * glm::scale(scale);
+    return glm::translate(position) * 
+    glm::rotate(euler_rotation.z, glm::vec3{0.0f, 0.0f, 1.0f}) *
+    glm::rotate(euler_rotation.y, glm::vec3{0.0f, 1.0f, 0.0f}) *
+    glm::rotate(euler_rotation.x, glm::vec3{1.0f, 0.0f, 0.0f}) *
+    glm::scale(scale);
 }
 
 void EditorScene::LocalTransformComponent::update_local_transform_from_json(const json& json) {
