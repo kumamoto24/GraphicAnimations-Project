@@ -83,9 +83,17 @@ LightingResult total_light_calculation(LightCalculatioData light_calculation_dat
     return LightingResult(total_diffuse, total_specular, total_ambient);
 }
 
+// Solution: E (3/10)
+uniform float texture_scale;
+
 vec3 resolve_textured_light_calculation(LightingResult result, sampler2D diffuse_texture, sampler2D specular_map, vec2 texture_coordinate) {
-    vec3 texture_colour = texture(diffuse_texture, texture_coordinate).rgb;
-    vec3 specular_map_sample = texture(specular_map, texture_coordinate).rgb;
+
+    // Solution: E (4/10)
+    vec2 scaled_texture_coordinate = texture_coordinate * texture_scale;
+
+    // Solution: E (5/10) Updated following two variables
+    vec3 texture_colour = texture(diffuse_texture, scaled_texture_coordinate).rgb;
+    vec3 specular_map_sample = texture(specular_map, scaled_texture_coordinate).rgb;
 
     vec3 textured_diffuse = result.total_diffuse * texture_colour;
     vec3 sampled_specular = result.total_specular * specular_map_sample;
