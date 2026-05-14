@@ -21,12 +21,7 @@ uniform vec3 specular_tint;
 uniform vec3 ambient_tint;
 uniform float shininess;
 
-// Light Data
-#if NUM_PL > 0
-layout (std140) uniform PointLightArray {
-    PointLightData point_lights[NUM_PL];
-};
-#endif
+
 
 // Global data
 uniform vec3 ws_view_position;
@@ -48,6 +43,9 @@ void main() {
     vertex_out.lighting_result = total_light_calculation(light_calculation_data, material
         #if NUM_PL > 0
         ,point_lights
+        #endif
+        #if NUM_DL > 0
+        ,DirectionalLightData directional_lights[NUM_DL]
         #endif
     );
 }
