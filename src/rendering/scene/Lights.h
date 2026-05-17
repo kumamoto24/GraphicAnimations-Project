@@ -33,7 +33,7 @@ struct PointLight {
         alignas(16) glm::vec3 colour;
     };
 };
-
+//solution H: copy from point light, and change the element from position to direction.
 struct DirectionalLight {
     DirectionalLight() = default;
 
@@ -64,6 +64,7 @@ struct DirectionalLight {
 /// those lights on a proximity basis, since processing an unbounded number of lights on the GPU is bad idea.
 struct LightScene {
     std::unordered_set<std::shared_ptr<PointLight>> point_lights;
+    //solution H:add the directional light set
     std::unordered_set<std::shared_ptr<DirectionalLight>> directional_lights;
 
     /// Will return up to `max_count` nearest point lights to `target`.
@@ -81,6 +82,7 @@ struct LightScene {
     ///       as well as support incrementally getting the `k` nearest.
     ///
     std::vector<PointLight> get_nearest_point_lights(glm::vec3 target, size_t max_count, size_t min_count = 0) const;
+    //solution H:add the get directional light function, and it will return all the directional light in the scene, since the directional light is not affected by the position, so we don't need to get the nearest directional light.
     std::vector<DirectionalLight> get_directional_lights() const;
 private:
     template<typename Light>

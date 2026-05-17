@@ -82,11 +82,11 @@ function(configure_lab_target TARGET_NAME)
         file(TO_NATIVE_PATH "${CMAKE_SOURCE_DIR}/config" _srcConfigDir)
 
         # Link the res and config dirs into where the build puts the exe
-        add_custom_command(TARGET ${TARGET_NAME}
-                POST_BUILD
-                COMMAND cmd.exe /c if not exist "${_dstResDir}" mklink /J "${_dstResDir}" "${_srcResDir}"
-                COMMAND cmd.exe /c if not exist "${_dstConfigDir}" mklink /J "${_dstConfigDir}" "${_srcConfigDir}"
-        )
+        #add_custom_command(TARGET ${TARGET_NAME}
+        #        POST_BUILD
+        #        COMMAND cmd.exe /c if not exist "${_dstResDir}" mklink /J "${_dstResDir}" "${_srcResDir}"
+        #        COMMAND cmd.exe /c if not exist "${_dstConfigDir}" mklink /J "${_dstConfigDir}" "${_srcConfigDir}"
+        #)
     else()
         # Link the res and config dirs into where the build puts the exe
         add_custom_command(TARGET ${TARGET_NAME}
@@ -129,6 +129,7 @@ add_executable(cits3003_project
         src/scene/editor_scene/EntityElement.cpp
         src/scene/editor_scene/AnimatedEntityElement.cpp
         src/scene/editor_scene/PointLightElement.cpp
+        src/scene/editor_scene/DirectionalLightElement.cpp
         src/scene/editor_scene/GroupElement.cpp
         src/scene/editor_scene/EmissiveEntityElement.cpp
         src/scene/editor_scene/SceneElement.cpp

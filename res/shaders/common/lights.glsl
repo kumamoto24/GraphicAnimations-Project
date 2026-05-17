@@ -25,7 +25,7 @@ struct PointLightData {
     vec3 position;
     vec3 colour;
 };
-
+//solution H:add the directional light data struct
 struct DirectionalLightData {
     vec3 direction;
     vec3 colour;
@@ -61,6 +61,7 @@ void point_light_calculation(PointLightData point_light, LightCalculatioData cal
     total_ambient += ambient_component;
 }
 
+//soution H:add the directional light calculation function
 // directional light
 void directional_light_calculation(DirectionalLightData directional_light, LightCalculatioData calculation_data, float shininess, inout vec3 total_diffuse, inout vec3 total_specular, inout vec3 total_ambient) {
     vec3 ws_light_dir = normalize(-directional_light.direction);
@@ -91,6 +92,7 @@ LightingResult total_light_calculation(LightCalculatioData light_calculation_dat
         #if NUM_PL > 0
         ,PointLightData point_lights[NUM_PL]
         #endif
+        //solution H:add the direcional light data
         #if NUM_DL > 0
         ,DirectionalLightData directional_lights[NUM_DL]
         #endif
@@ -105,6 +107,7 @@ LightingResult total_light_calculation(LightCalculatioData light_calculation_dat
         point_light_calculation(point_lights[i], light_calculation_data, material.shininess, total_diffuse, total_specular, total_ambient);
     }
     #endif
+    //solution H:add the direcional light data
     #if NUM_DL > 0
     for (int i = 0; i < NUM_DL; i++) {
         directional_light_calculation(directional_lights[i], light_calculation_data, material.shininess, total_diffuse, total_specular, total_ambient);

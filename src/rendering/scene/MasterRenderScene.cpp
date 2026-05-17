@@ -38,6 +38,7 @@ bool MasterRenderScene::remove_light(const std::shared_ptr<PointLight>& point_li
     return light_scene.point_lights.erase(point_light) != 0;
 }
 
+//solutino H:add the insert and remove function for directional light
 void MasterRenderScene::insert_directional_light(const std::shared_ptr<DirectionalLight>& light) {
     light_scene.directional_lights.insert(light);
 }

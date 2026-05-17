@@ -7,6 +7,7 @@ BaseLitEntityShader::BaseLitEntityShader(std::string name, const std::string& ve
                                          std::unordered_map<std::string, std::string> frag_defines) :
     BaseEntityShader(std::move(name), vertex_path, fragment_path, std::move(vert_defines), std::move(frag_defines)),
     point_lights_ubo({}, false),
+    //solution H:add the directional light ubo initialization
     directional_lights_ubo({}, false) {
 
     get_uniforms_set_bindings();
@@ -29,6 +30,7 @@ void BaseLitEntityShader::get_uniforms_set_bindings() {
     set_binding("specular_map_texture", 1);
     // Uniform block bindings
     set_block_binding("PointLightArray", POINT_LIGHT_BINDING);
+    //SOLUTION H:add the directional light block binding
     set_block_binding("DirectionalLightArray", DIRECTIONAL_LIGHT_BINDING);
 }
 
@@ -61,12 +63,12 @@ void BaseLitEntityShader::set_point_lights(const std::vector<PointLight>& point_
         point_lights_ubo.data[i].position = point_light.position;
         point_lights_ubo.data[i].colour = scaled_colour;
     }
-
+    //Solution: G (1/10)
     set_frag_define("NUM_PL", Formatter() << count);
     point_lights_ubo.bind(POINT_LIGHT_BINDING);
     point_lights_ubo.upload();
 }
-
+//solution H:add the set directional light function, and it will set all the directional light in the scene, since the directional light is not affected by the position, so we don't need to get the nearest directional light.
 void BaseLitEntityShader::set_directional_lights(const std::vector<DirectionalLight>& directional_lights) {
     uint count = std::min(MAX_DL, (uint) directional_lights.size());
 

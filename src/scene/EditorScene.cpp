@@ -102,6 +102,7 @@ void EditorScene::EditorScene::open(const SceneContext& scene_context) {
     /// All the light generators, new light types must be registered here to be able to be created in the UI
     light_generators = {
         {PointLightElement::ELEMENT_TYPE_NAME, [](const SceneContext& scene_context, ElementRef parent) { return PointLightElement::new_default(scene_context, parent); }},
+        //solution H:add the directional light generator
         {DirectionalLightElement::ELEMENT_TYPE_NAME, [](const SceneContext& scene_context, ElementRef parent) { return DirectionalLightElement::new_default(scene_context, parent); }},
     };
 
@@ -110,7 +111,8 @@ void EditorScene::EditorScene::open(const SceneContext& scene_context) {
         {EntityElement::ELEMENT_TYPE_NAME,         [](const SceneContext& scene_context, ElementRef parent, const json& j) { return EntityElement::from_json(scene_context, parent, j); }},
         {AnimatedEntityElement::ELEMENT_TYPE_NAME, [](const SceneContext& scene_context, ElementRef parent, const json& j) { return AnimatedEntityElement::from_json(scene_context, parent, j); }},
         {EmissiveEntityElement::ELEMENT_TYPE_NAME, [](const SceneContext& scene_context, ElementRef parent, const json& j) { return EmissiveEntityElement::from_json(scene_context, parent, j); }},
-        {PointLightElement::ELEMENT_TYPE_NAME,     [](const SceneContext& scene_context, ElementRef parent, const json& j) { return PointLightElement::from_json(scene_context, parent, j); }},
+        {PointLightElement::ELEMENT_TYPE_NAME,     [](const SceneContext& scene_context, ElementRef parent, const json& j) { return BaseLitEntityShader(scene_context, parent, j); }},
+        //solution H:add the directional light generator
         {DirectionalLightElement::ELEMENT_TYPE_NAME, [](const SceneContext& scene_context, ElementRef parent, const json& j) { return DirectionalLightElement::from_json(scene_context, parent, j); }},
         {GroupElement::ELEMENT_TYPE_NAME,          [](const SceneContext&, ElementRef parent, const json& j) { return GroupElement::from_json(parent, j); }},
     };
