@@ -64,6 +64,8 @@ json EditorScene::AnimatedEntityElement::into_json() const {
 
     return {
         local_transform_into_json(),
+        // Solution: I: Save path animation data.
+        path_animation_into_json(),
         material_into_json(),
         {"model", rendered_entity->mesh_hierarchy->filename.value()},
         {"diffuse_texture", texture_to_json(rendered_entity->render_data.diffuse_texture)},

@@ -1,6 +1,7 @@
 #include "EditorScene.h"
 
 #include <tinyfiledialogs/tinyfiledialogs.h>
+#include <cmath>
 
 #include "rendering/imgui/ImGuiManager.h"
 #include "rendering/cameras/PanningCamera.h"
@@ -118,7 +119,7 @@ void EditorScene::EditorScene::open(const SceneContext& scene_context) {
     };
 }
 
-std::pair<TickResponseType, std::shared_ptr<SceneInterface>> EditorScene::EditorScene::tick(float /*delta_time*/, const SceneContext& scene_context) {
+std::pair<TickResponseType, std::shared_ptr<SceneInterface>> EditorScene::EditorScene::tick(float delta_time, const SceneContext& scene_context) {
     /// If the `Esc` key was pressed this tick, then tell the scene manager to exit
     if (scene_context.window.was_key_pressed(GLFW_KEY_ESCAPE)) {
         return {TickResponseType::Exit, nullptr};
@@ -140,6 +141,18 @@ std::pair<TickResponseType, std::shared_ptr<SceneInterface>> EditorScene::Editor
     if (scene_context.imgui_enabled) {
         add_imgui_selection_editor(scene_context);
         add_imgui_scene_hierarchy(scene_context);
+    }
+
+    handle_mouse_path_point_placement(scene_context);
+
+    // Solution: I: Update path animations after editor input.
+    for (auto iter = scene_root->begin(); iter != scene_root->end(); ++iter) {
+        visit_children_and_root(iter, [delta_time](SceneElement& element) {
+            auto* local_transform = dynamic_cast<LocalTransformComponent*>(&element);
+            if (local_transform != nullptr) {
+                local_transform->update_path_animation(delta_time);
+            }
+        });
     }
 
     /// Default to telling the SceneManager to continue ticking
@@ -190,6 +203,43 @@ void EditorScene::EditorScene::set_camera_mode(CameraMode new_camera_mode) {
     }
     camera->load_properties(orientation);
     this->camera_mode = new_camera_mode;
+}
+
+void EditorScene::EditorScene::handle_mouse_path_point_placement(const SceneContext& scene_context) {
+    // Solution: I: Add mouse-placed waypoints to the selected element.
+    const bool left_mouse_down = scene_context.window.is_mouse_pressed(GLFW_MOUSE_BUTTON_LEFT);
+    const bool shift_down = scene_context.window.is_key_pressed(GLFW_KEY_LEFT_SHIFT) || scene_context.window.is_key_pressed(GLFW_KEY_RIGHT_SHIFT);
+
+    if (!left_mouse_down || was_mouse_path_button_down || !shift_down || is_null(selected_element)) {
+        was_mouse_path_button_down = left_mouse_down;
+        return;
+    }
+
+    auto* local_transform = dynamic_cast<LocalTransformComponent*>(selected_element->get());
+    if (local_transform == nullptr || !local_transform->path_mouse_ground_add_enabled) {
+        was_mouse_path_button_down = left_mouse_down;
+        return;
+    }
+
+    // Solution: I: Unproject the mouse coordinate into a world-space ray.
+    const glm::vec2 mouse_ndc = scene_context.window.get_mouse_pos_ndc();
+    const glm::vec4 ray_clip{mouse_ndc.x, mouse_ndc.y, -1.0f, 1.0f};
+    glm::vec4 ray_eye = camera->get_inverse_projection_matrix() * ray_clip;
+    ray_eye = {ray_eye.x, ray_eye.y, -1.0f, 0.0f};
+
+    const glm::vec3 ray_origin = camera->get_position();
+    const glm::vec3 ray_direction = glm::normalize(glm::vec3{camera->get_inverse_view_matrix() * ray_eye});
+
+    if (std::abs(ray_direction.y) > 0.000001f) {
+        // Solution: I: Intersect the ray with a horizontal placement plane.
+        const float target_y = 0.5f * local_transform->scale.y;
+        const float t = (target_y - ray_origin.y) / ray_direction.y;
+        if (t >= 0.0f) {
+            local_transform->path_points.push_back(ray_origin + ray_direction * t);
+        }
+    }
+
+    was_mouse_path_button_down = left_mouse_down;
 }
 
 void EditorScene::EditorScene::add_imgui_selection_editor(const SceneContext& scene_context) {

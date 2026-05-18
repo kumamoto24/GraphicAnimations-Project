@@ -2,6 +2,26 @@
 #include "scene/SceneContext.h"
 #include "rendering/imgui/ImGuiManager.h"
 
+#include <algorithm>
+#include <cmath>
+
+namespace {
+    // Solution: I: Optional Catmull-Rom path smoothing.
+    glm::vec3 catmull_rom(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, float t) {
+        const float t2 = t * t;
+        const float t3 = t2 * t;
+        // Catmull-Rom spline interpolation
+        // Formula adapted from Robert Dunlop, "Introduction to Catmull-Rom Splines":
+        // https://mvps.org/directx/articles/catmull/
+        return 0.5f * (
+            (2.0f * p1) +
+            (-p0 + p2) * t +
+            (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
+            (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3
+        );
+    }
+}
+
 void EditorScene::SceneElement::add_imgui_edit_section(MasterRenderScene& /*render_scene*/, const SceneContext& /*scene_context*/) {
     ImGui::InputText("Name", &name, 0);
     ImGui::Spacing();
@@ -91,6 +111,119 @@ void EditorScene::LocalTransformComponent::add_local_transform_imgui_edit_sectio
     if (transformUpdated) {
         update_instance_data();
     }
+
+    // Solution: I: Path animation controls.
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    ImGui::Text("New feature: Path Animation");
+
+    if (ImGui::Button("Add Current Position")) {
+        path_points.push_back(position);
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Clear Path")) {
+        path_points.clear();
+        path_animation_playing = false;
+        path_animation_time = 0.0f;
+    }
+
+    ImGui::Checkbox("Loop Path", &path_animation_loop);
+    ImGui::Checkbox("Curved Path", &path_curve_enabled);
+    ImGui::Checkbox("Mouse Ground Add", &path_mouse_ground_add_enabled);
+    ImGui::SameLine();
+    ImGui::HelpMarker("When enabled, Shift + left click on the ground plane to add a path point");
+    ImGui::DragFloat("Path Duration", &path_animation_duration, 0.1f, 0.1f, FLT_MAX, "%.2f sec");
+
+    if (path_points.size() >= 2) {
+        if (ImGui::SliderFloat("Path Time", &path_animation_time, 0.0f, path_animation_duration, "%.2f sec")) {
+            update_path_animation(0.0f, true);
+        }
+
+        if (ImGui::Button(path_animation_playing ? "Pause Path" : "Play Path")) {
+            path_animation_playing = !path_animation_playing;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Restart Path")) {
+            path_animation_time = 0.0f;
+            path_animation_playing = true;
+            position = path_points.front();
+            update_instance_data();
+        }
+    } else {
+        ImGui::Text("Add at least two points to play a path.");
+    }
+
+    for (auto i = 0u; i < path_points.size(); ++i) {
+        ImGui::PushID(static_cast<int>(i));
+        bool point_changed = ImGui::DragFloat3("Point", &path_points[i][0], 0.01f);
+        ImGui::DragDisableCursor(scene_context.window);
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Remove")) {
+            path_points.erase(path_points.begin() + i);
+            if (path_points.size() < 2) {
+                path_animation_playing = false;
+                path_animation_time = 0.0f;
+            }
+            ImGui::PopID();
+            break;
+        }
+
+        if (point_changed && path_animation_time == 0.0f && i == 0) {
+            position = path_points.front();
+            update_instance_data();
+        }
+
+        ImGui::PopID();
+    }
+}
+
+void EditorScene::LocalTransformComponent::update_path_animation(float delta_time, bool force_update) {
+    // Solution: I: Advance or preview the stored path.
+    if ((!path_animation_playing && !force_update) || path_points.size() < 2) {
+        return;
+    }
+
+    path_animation_duration = std::max(path_animation_duration, 0.1f);
+    if (path_animation_playing) {
+        path_animation_time += delta_time;
+    }
+
+    if (path_animation_time >= path_animation_duration) {
+        if (path_animation_loop) {
+            path_animation_time = std::fmod(path_animation_time, path_animation_duration);
+        } else {
+            path_animation_time = path_animation_duration;
+            path_animation_playing = false;
+        }
+    }
+
+    const float path_progress = path_animation_time / path_animation_duration;
+    const float scaled_progress = path_progress * static_cast<float>(path_points.size() - 1);
+    // Solution: I: Convert path time into segment progress.
+    const auto start_index = static_cast<std::size_t>(std::min(
+        std::floor(scaled_progress),
+        static_cast<float>(path_points.size() - 2)
+    ));
+    const float segment_progress = scaled_progress - static_cast<float>(start_index);
+
+    if (path_curve_enabled && path_points.size() >= 3) {
+        const glm::vec3& p0 = path_points[start_index == 0 ? start_index : start_index - 1];
+        const glm::vec3& p1 = path_points[start_index];
+        const glm::vec3& p2 = path_points[start_index + 1];
+        const glm::vec3& p3 = path_points[std::min(start_index + 2, path_points.size() - 1)];
+        position = catmull_rom(p0, p1, p2, p3, segment_progress);
+    } else {
+        position = glm::mix(path_points[start_index], path_points[start_index + 1], segment_progress);
+    }
+    update_instance_data();
 }
 
 // Solution: task B
@@ -107,6 +240,36 @@ void EditorScene::LocalTransformComponent::update_local_transform_from_json(cons
     position = t["position"];
     euler_rotation = t["euler_rotation"];
     scale = t["scale"];
+
+    // Solution: I: Load optional path data.
+    path_points.clear();
+    path_animation_playing = false;
+    path_animation_time = 0.0f;
+    path_animation_loop = true;
+    path_curve_enabled = false;
+    path_mouse_ground_add_enabled = false;
+
+    if (json.contains("path_animation")) {
+        const auto& path = json["path_animation"];
+        if (path.contains("points")) {
+            path_points = path["points"].get<std::vector<glm::vec3>>();
+        }
+        if (path.contains("loop")) {
+            path_animation_loop = path["loop"];
+        }
+        if (path.contains("curved")) {
+            path_curve_enabled = path["curved"];
+        }
+        if (path.contains("mouse_ground_add")) {
+            path_mouse_ground_add_enabled = path["mouse_ground_add"];
+        }
+        if (path.contains("duration")) {
+            path_animation_duration = std::max(path["duration"].get<float>(), 0.1f);
+        }
+        if (path.contains("time")) {
+            path_animation_time = std::clamp(path["time"].get<float>(), 0.0f, path_animation_duration);
+        }
+    }
 }
 
 json EditorScene::LocalTransformComponent::local_transform_into_json() const {
@@ -114,6 +277,18 @@ json EditorScene::LocalTransformComponent::local_transform_into_json() const {
         {"position", position},
         {"euler_rotation", euler_rotation},
         {"scale", scale},
+    }};
+}
+
+json EditorScene::LocalTransformComponent::path_animation_into_json() const {
+    // Solution: I: Save path points and playback options.
+    return {"path_animation", {
+        {"points", path_points},
+        {"loop", path_animation_loop},
+        {"curved", path_curve_enabled},
+        {"mouse_ground_add", path_mouse_ground_add_enabled},
+        {"duration", path_animation_duration},
+        {"time", path_animation_time},
     }};
 }
 

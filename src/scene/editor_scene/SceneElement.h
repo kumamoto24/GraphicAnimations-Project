@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <list>
+#include <vector>
 
 #include <glm/glm.hpp>
 
@@ -88,6 +89,17 @@ namespace EditorScene {
         glm::vec3 euler_rotation;
         glm::vec3 scale;
 
+        // Solution: I: Path animation state for transformable elements.
+        std::vector<glm::vec3> path_points{};
+        bool path_animation_playing = false;
+        bool path_animation_loop = true;
+        bool path_curve_enabled = false;
+        bool path_mouse_ground_add_enabled = false;
+        float path_animation_duration = 5.0f;
+        float path_animation_time = 0.0f;
+
+        void update_path_animation(float delta_time, bool force_update = false);
+
     protected:
         LocalTransformComponent(const glm::vec3& position, const glm::vec3& euler_rotation, const glm::vec3& scale) : position(position), euler_rotation(euler_rotation), scale(scale) {}
 
@@ -95,6 +107,7 @@ namespace EditorScene {
 
         void update_local_transform_from_json(const json& json);
         [[nodiscard]] json local_transform_into_json() const;
+        [[nodiscard]] json path_animation_into_json() const;
 
         [[nodiscard]] glm::mat4 calc_model_matrix() const;
     };
