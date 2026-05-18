@@ -73,6 +73,11 @@ namespace EditorScene {
         void visit_children(ElementRef root, const std::function<void(SceneElement&)>& visit);
         void visit_children_and_root(ElementRef root, const std::function<void(SceneElement&)>& visit);
 
+        // Solution I: Refresh and apply the editor-only material highlight for the selected scene element.
+        void update_selection_highlight();
+        // Solution I: Apply a temporary highlight to render data without changing the saved element material.
+        static void apply_selection_highlight(SceneElement& element);
+
         /// Helpers to save an element to json, and add an element from json
         [[nodiscard]] static json element_to_labelled_json(const SceneElement& element);
         void add_labelled_json_element(const SceneContext& scene_context, ElementRef parent, const ElementList& list, const json& j);

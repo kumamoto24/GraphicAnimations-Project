@@ -140,6 +140,9 @@ std::pair<TickResponseType, std::shared_ptr<SceneInterface>> EditorScene::Editor
         add_imgui_scene_hierarchy(scene_context);
     }
 
+    // Solution I: Update the selected object highlight after UI changes the current selection.
+    update_selection_highlight();
+
     /// Default to telling the SceneManager to continue ticking
     return {TickResponseType::Continue, nullptr};
 }
@@ -476,6 +479,45 @@ void EditorScene::EditorScene::visit_children_and_root(ElementRef root, const st
         for (auto iter = children->begin(); iter != children->end(); ++iter) {
             visit_children_and_root(iter, visit);
         }
+    }
+}
+
+// Solution I: Restore all render data from the saved element state, then highlight only the selected element.
+void EditorScene::EditorScene::update_selection_highlight() {
+    for (auto iter = scene_root->begin(); iter != scene_root->end(); ++iter) {
+        visit_children_and_root(iter, [](SceneElement& element) {
+            element.update_instance_data();
+        });
+    }
+
+    if (!is_null(selected_element)) {
+        apply_selection_highlight(**selected_element);
+    }
+}
+
+// Solution I: The highlight is applied only to instance render data so it is not written to scene JSON.
+void EditorScene::EditorScene::apply_selection_highlight(SceneElement& element) {
+    const glm::vec4 highlight_diffuse{1.0f, 0.85f, 0.1f, 1.0f};
+    const glm::vec4 highlight_specular{1.0f, 1.0f, 0.4f, 2.0f};
+    const glm::vec4 highlight_ambient{1.0f, 0.75f, 0.1f, 2.0f};
+    const glm::vec4 highlight_emissive{1.0f, 0.85f, 0.1f, 2.0f};
+
+    if (auto* entity = dynamic_cast<EntityElement*>(&element)) {
+        entity->rendered_entity->instance_data.material.diffuse_tint = highlight_diffuse;
+        entity->rendered_entity->instance_data.material.specular_tint = highlight_specular;
+        entity->rendered_entity->instance_data.material.ambient_tint = highlight_ambient;
+        return;
+    }
+
+    if (auto* animated = dynamic_cast<AnimatedEntityElement*>(&element)) {
+        animated->rendered_entity->instance_data.material.diffuse_tint = highlight_diffuse;
+        animated->rendered_entity->instance_data.material.specular_tint = highlight_specular;
+        animated->rendered_entity->instance_data.material.ambient_tint = highlight_ambient;
+        return;
+    }
+
+    if (auto* emissive = dynamic_cast<EmissiveEntityElement*>(&element)) {
+        emissive->rendered_entity->instance_data.material.emission_tint = highlight_emissive;
     }
 }
 
