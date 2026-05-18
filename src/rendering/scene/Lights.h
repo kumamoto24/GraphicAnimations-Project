@@ -34,10 +34,39 @@ struct PointLight {
     };
 };
 
+/// Solution: H (1/16): Directional lights keep a constant world-space travel direction instead of a position.
+struct DirectionalLight {
+    DirectionalLight() = default;
+
+    DirectionalLight(const glm::vec3& direction, const glm::vec4& colour) :
+        direction(direction), colour(colour) {}
+
+    static DirectionalLight off() {
+        return {glm::vec3{0.0f, -1.0f, 0.0f}, glm::vec4{}};
+    }
+
+    static std::shared_ptr<DirectionalLight> create(const glm::vec3& direction, const glm::vec4& colour) {
+        return std::make_shared<DirectionalLight>(direction, colour);
+    }
+
+    // Direction that the light travels through the world before hitting surfaces.
+    glm::vec3 direction{0.0f, -1.0f, 0.0f};
+    // Alpha components are just used to store a scalar that is applied before passing to the GPU
+    glm::vec4 colour{};
+
+    // On GPU format
+    // alignas used to conform to std140 for direct binary usage with glsl
+    struct Data {
+        alignas(16) glm::vec3 direction;
+        alignas(16) glm::vec3 colour;
+    };
+};
+
 /// A collection of each light type, with helpers that allow for selecting a subset of
 /// those lights on a proximity basis, since processing an unbounded number of lights on the GPU is bad idea.
 struct LightScene {
     std::unordered_set<std::shared_ptr<PointLight>> point_lights;
+    std::unordered_set<std::shared_ptr<DirectionalLight>> directional_lights;
 
     /// Will return up to `max_count` nearest point lights to `target`.
     /// It returns less than `max_count` if there are not that many point lights,
@@ -54,6 +83,9 @@ struct LightScene {
     ///       as well as support incrementally getting the `k` nearest.
     ///
     std::vector<PointLight> get_nearest_point_lights(glm::vec3 target, size_t max_count, size_t min_count = 0) const;
+
+    /// Solution: H (2/16): Directional lights are position independent, so return any bounded subset and pad if needed.
+    std::vector<DirectionalLight> get_directional_lights(size_t max_count, size_t min_count = 0) const;
 
 private:
     template<typename Light>

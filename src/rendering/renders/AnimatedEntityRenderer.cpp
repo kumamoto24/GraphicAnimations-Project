@@ -36,6 +36,8 @@ void AnimatedEntityRenderer::AnimatedEntityRenderer::render(const RenderScene& r
         // so that issue won't happen since it only recompiles on a change.
         // Just make sure to be careful of this kind of thing.
         shader.set_point_lights(light_scene.get_nearest_point_lights(position, BaseLitEntityShader::MAX_PL, 1));
+        // Solution: H (11/16): Animated meshes use the same directional light list as static meshes.
+        shader.set_directional_lights(light_scene.get_directional_lights(BaseLitEntityShader::MAX_DL));
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, entity->render_data.diffuse_texture->get_texture_id());
