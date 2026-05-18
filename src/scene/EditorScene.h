@@ -45,6 +45,8 @@ namespace EditorScene {
         std::unordered_map<std::string, std::function<std::unique_ptr<SceneElement>(const SceneContext& scene_context, ElementRef parent, const json& j)>> json_generators;
         /// The current save path
         std::optional<std::string> save_path{};
+        // Solution: I: Debounce mouse waypoint placement.
+        bool was_mouse_path_button_down = false;
 
         // The RenderScene of the Scene
         MasterRenderScene render_scene{};
@@ -68,6 +70,8 @@ namespace EditorScene {
 
         /// A helper for switching camera mode
         void set_camera_mode(CameraMode new_camera_mode);
+        /// Solution: I: Converts mouse clicks into path waypoints.
+        void handle_mouse_path_point_placement(const SceneContext& scene_context);
 
         /// Helpers to recursively iterator down the scene tree
         void visit_children(ElementRef root, const std::function<void(SceneElement&)>& visit);

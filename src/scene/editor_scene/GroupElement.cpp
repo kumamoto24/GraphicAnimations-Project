@@ -73,6 +73,8 @@ std::unique_ptr<EditorScene::GroupElement> EditorScene::GroupElement::from_json(
 json EditorScene::GroupElement::into_json() const {
     return {
         local_transform_into_json(),
+        // Solution: I: Save path animation data.
+        path_animation_into_json(),
     };
 }
 

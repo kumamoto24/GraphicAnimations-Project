@@ -54,6 +54,8 @@ json EditorScene::EmissiveEntityElement::into_json() const {
 
     return {
         local_transform_into_json(),
+        // Solution: I: Save path animation data.
+        path_animation_into_json(),
         emissive_material_into_json(),
         {"model", rendered_entity->model->get_filename().value()},
         {"emission_texture", texture_to_json(rendered_entity->render_data.emission_texture)},
